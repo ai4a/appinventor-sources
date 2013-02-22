@@ -414,6 +414,28 @@ public final class Compiler {
     if (!compiler.writeAndroidManifest(manifestFile, permissionsNeeded)) {
       return false;
     }
+    
+    // generate a manifest into the tmpdir
+    // if we provided a manifest for this project
+    // use it
+    // else use the one we generate
+    
+    File tmpManifestFile = new File(System.getProperty("java.io.tmpdir") + "/ai4a", Signatures.getPackageName(project.getMainClass())  + ".xml");
+    File myManifestFile = new File(System.getProperty("java.io.tmpdir") + "/ai4a", Signatures.getPackageName(project.getMainClass()) + ".AndroidManifest"  + ".xml");
+    LOG.info("current manifest file name:" + tmpManifestFile.getAbsolutePath());
+    LOG.info("modified manifest file name:" + myManifestFile.getAbsolutePath());
+    if (tmpManifestFile.exists()) {
+      if (!copyFile(manifestFile.getAbsolutePath(), tmpManifestFile.getAbsolutePath())) {
+        LOG.warning("Did not copy App Inventor manifest!");
+      }
+      if (myManifestFile.exists()) {
+        LOG.info("replacing with modified manifest file:" + myManifestFile.getAbsolutePath());
+        if (!copyFile(myManifestFile.getAbsolutePath(), manifestFile.getAbsolutePath())) {
+          LOG.warning("Did not replace App Inventor manifest with my manifest!");
+        }
+      }
+    }
+    
     setProgress(20);
 
     // Create class files.
@@ -584,7 +606,7 @@ public final class Compiler {
       List<String> classFileNames = Lists.newArrayListWithCapacity(sources.size());
       boolean userCodeExists = false;
       for (Project.SourceDescriptor source : sources) {
-        String sourceFileName = source.getFile().getAbsolutePath();
+        String sourceFileName = source.getFile().getAbsolutePath().replace('\\', '/');
         LOG.log(Level.INFO, "source file: " + sourceFileName);
         int srcIndex = sourceFileName.indexOf("/../src/");
         String sourceFileRelativePath = sourceFileName.substring(srcIndex + 8);
@@ -698,25 +720,17 @@ public final class Compiler {
   }
 
   private boolean runJarSigner(String apkAbsolutePath, String keystoreAbsolutePath) {
-    // TODO(user): maybe make a command line flag for the jarsigner location
-    String javaHome = System.getProperty("java.home");
-    // This works on Mac OS X.
-    File jarsignerFile = new File(javaHome + File.separator + "bin" +
-        File.separator + "jarsigner");
+    String javaHome = System.getenv("JAVA_HOME"); // ggf
+    String jarsigner = "jarsigner";
+    if (System.getProperty("os.name").contains("Windows")) {
+      jarsigner = "jarsigner.exe";
+    }
+    File jarsignerFile = new File(javaHome + File.separator + "bin" + File.separator + jarsigner);
     if (!jarsignerFile.exists()) {
-      // This works when a JDK is installed with the JRE.
-      jarsignerFile = new File(javaHome + File.separator + ".." + File.separator + "bin" +
-          File.separator + "jarsigner");
-      if (System.getProperty("os.name").startsWith("Windows")){
-        jarsignerFile = new File(javaHome + File.separator + ".." + File.separator + "bin" +
-            File.separator + "jarsigner.exe");
-      }
-      if (!jarsignerFile.exists()) {
-        LOG.warning("YAIL compiler - could not find jarsigner.");
-        err.println("YAIL compiler - could not find jarsigner.");
-        userErrors.print(String.format(ERROR_IN_STAGE, "JarSigner"));
-        return false;
-      }
+      LOG.warning("YAIL compiler - could not find jarsigner.");
+      err.println("YAIL compiler - could not find jarsigner.");
+      userErrors.print(String.format(ERROR_IN_STAGE, "JarSigner"));
+      return false;
     }
 
     String[] jarsignerCommandLine = {
@@ -951,7 +965,7 @@ public final class Compiler {
             file);
         resources.put(resourcePath, file);
       }
-      return file.getAbsolutePath();
+      return file.getAbsolutePath().replace("\\", "/");
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

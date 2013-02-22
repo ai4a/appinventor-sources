@@ -45,7 +45,7 @@ public class YailEvalTest extends TestCase {
   public void setUp() throws Exception {
     scheme = new Scheme();
     String yailRuntimeLibrary = Compiler.getResource(Compiler.YAIL_RUNTIME);
-    String yailSchemeTests = YAIL_SCHEME_TESTS;
+    String yailSchemeTests = YAIL_SCHEME_TESTS.replace('\\', '/');
     try {
       scheme.eval("(load \"" + yailRuntimeLibrary + "\")");
       scheme.eval("(load \"" + yailSchemeTests + "\")");
