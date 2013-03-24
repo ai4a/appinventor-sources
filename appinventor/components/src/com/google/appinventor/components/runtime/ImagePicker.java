@@ -61,7 +61,7 @@ public class ImagePicker extends Picker implements ActivityResultListener {
   private static final String FILE_PREFIX = "picked_image";
   
  // max number of files to save in image directory
-  private static int maxSavedFiles = 10;
+  private static int maxSavedFiles = 100;
   
   // The media path (URI) for the selected image file created by MediaUtil
   private String selectionURI;
